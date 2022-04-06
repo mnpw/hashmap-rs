@@ -59,6 +59,17 @@ where
             .map(|&(_, ref v)| v)
     }
 
+    pub fn remove(&mut self, key: &K) -> Option<V> {
+        let bucket = self.bucket(&key);
+        let bucket = &mut self.buckets[bucket];
+
+        let id = bucket.iter().position(|&(ref k, _)| k == key)?;
+
+        self.items -= 1;
+        let (_, val) = bucket.swap_remove(id);
+        Some(val)
+    }
+
     pub fn resize(&mut self) {
         let target_size = match self.buckets.len() {
             0 => INITIAL_NBUCKETS,
@@ -95,5 +106,7 @@ mod tests {
         let mut map = HashMap::new();
         map.insert("foo", 42);
         assert_eq!(map.get(&"foo"), Some(&42));
+        assert_eq!(map.remove(&"foo"), Some(42));
+        assert_eq!(map.get(&"foo"), None);
     }
 }
