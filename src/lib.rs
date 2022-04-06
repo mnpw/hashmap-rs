@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::mem;
+use std::ops::Index;
 
 const INITIAL_NBUCKETS: usize = 1;
 
@@ -129,6 +130,21 @@ where
     }
 }
 
+impl<Q, K, V> Index<&Q> for HashMap<K, V>
+where
+    K: Hash + Eq + Borrow<Q>,
+    Q: Hash + Eq + ?Sized,
+{
+    type Output = V;
+
+    fn index(&self, key: &Q) -> &Self::Output {
+        match self.get(key) {
+            Some(val) => val,
+            None => panic!(),
+        }
+    }
+}
+
 pub struct Iter<'a, K, V> {
     map: &'a HashMap<K, V>,
     bucket: usize,
@@ -207,5 +223,15 @@ mod tests {
         }
 
         assert_eq!((&map).into_iter().count(), 4);
+    }
+
+    #[test]
+    fn index() {
+        let mut map = HashMap::new();
+        map.insert("foo", 42);
+        assert_eq!(map["foo"], 42);
+
+        let result = std::panic::catch_unwind(|| map["bar"]);
+        assert!(result.is_err());
     }
 }
