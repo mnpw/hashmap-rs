@@ -138,10 +138,7 @@ where
     type Output = V;
 
     fn index(&self, key: &Q) -> &Self::Output {
-        match self.get(key) {
-            Some(val) => val,
-            None => panic!(),
-        }
+        self.get(key).expect("no entry found for the key")
     }
 }
 
