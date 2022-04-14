@@ -213,12 +213,7 @@ where
     K: Eq + Hash,
 {
     fn from(entries: [(K, V); N]) -> Self {
-        let mut map = HashMap::new();
-        for (k, v) in entries {
-            map.insert(k, v);
-        }
-
-        map
+        Self::from_iter(entries)
     }
 }
 
@@ -273,6 +268,20 @@ impl<'a, K, V> IntoIterator for &'a HashMap<K, V> {
             bucket: 0,
             at: 0,
         }
+    }
+}
+
+impl<'a, K, V> FromIterator<(K, V)> for HashMap<K, V>
+where
+    K: Hash + Eq,
+{
+    fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
+        let mut map = HashMap::new();
+        for (k, v) in iter {
+            map.insert(k, v);
+        }
+
+        map
     }
 }
 
