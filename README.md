@@ -1,28 +1,98 @@
-### hashmap-rs
+# hashmap-rs
 
 Building a simple HashMap in Rust. Follows [live stream](https://www.youtube.com/watch?v=k6xR2kf9hlA) done by Jon Gjengset. 
 
 
-### Technical notes:
-- HashMap requires another object type apart from key and value. That type should implement the trait BuildHasher. Anything that implements BuildHasher has to implement a function `build_hasher` that has to return the type that implements trait `Hasher`. 
+## Implementation:
 
-### Notes:
-- Building a library through example
-	-  This is very much like doing TDD. Think how user of the library will use it and develop from there. This will force you to think hard about the features and non-features and make the scope very concrete.
-	-	We can directly take the [example](https://doc.rust-lang.org/stable/std/collections/struct.HashMap.html#examples) that rust docs list for std::collections::HashMap!
-- What is `extern crate` doing?
-	- See [this answer](https://stackoverflow.com/a/54378840/12764266) and [official documentation](https://doc.rust-lang.org/edition-guide/rust-2018/module-system/path-clarity.html).
+The HashMap currently supports a subset of the standard library HashMap's [implementations](https://doc.rust-lang.org/stable/std/collections/hash_map/struct.HashMap.html#implementations):
+
+#### `HashMap`
+- Methods: 
+	- `new`
+	- `bucket`
+	- `entry`
+	- `insert`
+	- `get`
+	- `contains_key`
+	- `remove`
+	- `resize`
+	- `len`
+	- `is_empty`
+- Traits:
+	- `Index`
+	- `From`
+	- `IntoIterator`
+	- `FromIterator`
+#### `Entry`
+- Methods:
+	- `or_insert`
+	- `or_insert_with`
+	- `or_default`
+
+### Technical Notes:
+- Map structure:
+	```
+	BUCKETS
+	-----     -------
+	| 0 | ->  | k,v |
+	-----     -------------
+	| 1 | ->  | k,v | k,v |
+	-----     -------------
+	| 2 | ->  
+	-----     -------
+	| 3 | ->  | k,v |
+	-----     -------------------------
+	| 4 | ->  | k,v | k,v | k,v | k,v |
+	-----     -------------------------
+	 .
+	 .
+	 .
+	
+
+	 k,v: key value pair
+	```
+- HashMap created by `new` method should not allocate any memory. It will be of capacity 0.  
+- Map will be resized when it is either empty or 3/4 full. On every resize we double the capacity.
+- Key must implement `Hash + Eq`. `Hash` required so that key can be hashed and mapped to a bucket number. `Eq` is required so that it can be checked if map contains an (key, value) entry or not.
+- If `insert` method is called and the key is already present, use `std::mem::replace`. With `replace`, owning the values or expecting them to be `Clone`able is [not required](https://doc.rust-lang.org/std/mem/fn.replace.html#examples).	
+- `get` operation should be generic over the underlying key data. If key is of type `String`, we should be able to get with type `&str`. If the owned key type is K, then `get` [should be generic over Q](https://doc.rust-lang.org/std/borrow/trait.Borrow.html#examples) such that `K: Borrow <Q>` and `Q: [whatever K is required to have]`. 
+- Use `Vec::swap_remove` to efficiently remove an entry in `remove` method.
+-  `IntoIterator::into_iter` returns a type that implements `Iterator::next`. IntoIterator implementation for map exists for a ref to map `... IntoIterator for &'a HashMap<K, V>` and owned map `... IntoIterator for HashMap<K, V>`.
+- To manage lifetimes while implementing `entry` method, determine the `Entry` type first (whether `Entry::Occupied` or `Entry::Vacant`) and then return relevant type. (This way `unsafe` usage can be avoided. [Implementation in livestream uses `unsafe`](https://youtu.be/k6xR2kf9hlA?t=7214))
+
+
+## Notes:
+- Idea of building a library through example.
+	- This is very much like doing TDD. Think how user of the library will use it and develop from there. This will force you to think hard about the features and non-features and make the scope very concrete.
+	- We can directly take the [example](https://doc.rust-lang.org/stable/std/collections/struct.HashMap.html#examples) that rust docs list for std::collections::HashMap!
 - Jon: "You should have trait bounds on the methods rather on the data structures themselves." 
-	- Standard implementation of HashMap only applies trait bounds on the implementation and not on the type. 
-	- I don't see this being good or bad, just a matter of preference. 
-- Why have `impl<T> SomeType<T>` and not `impl SomeType<T>`?
-	- "...we have to declare `T` just after `impl` so we can use it to specify that we’re implementing methods on the type `Point<T>`. By declaring `T` as a generic type after `impl`, Rust can identify that the type in the angle brackets in `Point` is a generic type rather than a concrete type." from [rust book](https://doc.rust-lang.org/stable/book/ch10-01-syntax.html#in-method-definitions)
-- Need to pick a default state for the buckets. The general way would be to pick the power of two. But we should not do that in rust, creating an empty new vector for a bucket is free and better.
-- A tradeoff between having low number of buckets and very high number of buckets.
-	- Low number of buckets would mean we would not have to perform the costly resize operation.
-	- High number of buckets would mean large memory required.
-- Why `insert` method returns `Option<V>`?
-	- insert returns something if we are performing an overwrite operation.
+	- Standard implementation of HashMap only applies trait bounds on the implementation and not on the type. 	
 - What is difference between `&` and `ref`?
-	- In destructuring subpatterns the `&` operator can't be applied to the value's fields. `ref`s objective is exclusively to make the matched binding a reference, instead of potentially copying or moving what was matched. [source](https://doc.rust-lang.org/reference/patterns.html#identifier-patterns)
-- 
+	- In destructuring subpatterns the `&` operator can't be applied to the value's fields. `ref`s objective is exclusively to make the matched binding a reference, instead of potentially copying or moving what was matched. See [source](https://doc.rust-lang.org/reference/patterns.html#identifier-patterns).
+- `unreachable!()` -> is a neat macro that will just throw the error when it is invoked.
+- Generics + Lifetimes?
+	- Rust book [ch 10](https://doc.rust-lang.org/stable/book/ch10-00-generics.html).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
