@@ -271,7 +271,7 @@ impl<'a, K, V> IntoIterator for &'a HashMap<K, V> {
     }
 }
 
-impl<'a, K, V> FromIterator<(K, V)> for HashMap<K, V>
+impl<K, V> FromIterator<(K, V)> for HashMap<K, V>
 where
     K: Hash + Eq,
 {
